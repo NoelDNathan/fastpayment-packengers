@@ -17,40 +17,26 @@ from app.schemas.accounts_documents import (
     AccountsDocumentsUpdate,
 )
 
-router = APIRouter(prefix="/api/accounts-documents", tags=["accounts-documents"])
+router = APIRouter(prefix="/api/accounts", tags=["accounts"])
 
 
-@router.get("", response_model=list[AccountsDocumentsResponse])
-async def list_documents(
-    current_user: Account = Depends(get_current_active_user),
-    session: AsyncSession = Depends(get_db),
-) -> list[AccountsDocumentsResponse]:
-    """List all documents for the current user."""
-    query = select(AccountsDocuments).where(AccountsDocuments.account_id == current_user.id)
-    result = await session.scalars(query)
-    documents = result.all()
-    return [AccountsDocumentsResponse.model_validate(doc) for doc in documents]
 
 
-@router.get("/{document_id}", response_model=AccountsDocumentsResponse)
-async def get_document(
-    document_id: UUID,
-    current_user: Account = Depends(get_current_active_user),
+
+@router.get("/{account_id}", response_model=AccountsDocumentsResponse)
+async def get_account(
+    account_id: UUID,
     session: AsyncSession = Depends(get_db),
 ) -> AccountsDocumentsResponse:
     """Get a specific document by ID."""
-    document = await session.get(AccountsDocuments, document_id)
-    if not document:
+    account = await session.get(Account, account_id)
+    if not account:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Document not found",
+            detail="Account not found",
         )
 
-    if document.account_id != current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not enough permissions",
-        )
+        
 
     return AccountsDocumentsResponse.model_validate(document)
 
