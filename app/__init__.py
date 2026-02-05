@@ -1,0 +1,1 @@
+"""Fastpayment FastAPI application."""
