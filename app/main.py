@@ -8,6 +8,12 @@ from app.database import init_db, close_db
 from app.middleware import setup_cors, setup_prometheus
 from app.logging_config import setup_logging
 from app.routers import health
+from app.routers import accounts
+from app.routers import advance_requests
+from app.routers import invoice_status_history
+from app.routers import invoices
+from app.routers import payments
+from app.routers import account_scores
 
 # Setup logging
 setup_logging()
@@ -39,6 +45,12 @@ setup_prometheus(app)
 
 # Include routers
 app.include_router(health.router)
+app.include_router(accounts.router)
+app.include_router(advance_requests.router)
+app.include_router(invoice_status_history.router)
+app.include_router(invoices.router)
+app.include_router(payments.router)
+app.include_router(account_scores.router)
 
 
 @app.get("/")

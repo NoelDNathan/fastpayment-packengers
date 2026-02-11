@@ -1,14 +1,15 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 from uuid import UUID
 
-from models.account_scores import AccountScore
-from schemas.account_scores import (
+from app.models.account_scores import AccountScore
+from app.schemas.account_scores import (
     AccountScoreCreate,
     AccountScoreUpdate,
     AccountScoreResponse
 )
-from database import get_db
+from app.database import get_db
 
 router = APIRouter(
     prefix="/account-scores",
@@ -17,15 +18,14 @@ router = APIRouter(
 
 # Create score record (usually internal)
 @router.post("/", response_model=AccountScoreResponse)
-def create_account_score(
+async def create_account_score(
     score: AccountScoreCreate,
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
-    existing = (
-        db.query(AccountScore)
-        .filter(AccountScore.account_id == score.account_id)
-        .first()
+    result = await db.execute(
+        select(AccountScore).filter(AccountScore.account_id == score.account_id)
     )
+    existing = result.scalars().one_or_none()
 
     if existing:
         raise HTTPException(status_code=400, detail="Account score already exists")
@@ -36,19 +36,18 @@ def create_account_score(
     )
 
     db.add(new_score)
-    db.commit()
-    db.refresh(new_score)
+    await db.commit()
+    await db.refresh(new_score)
     return new_score
 
 
 # Get score by account_id
 @router.get("/{account_id}", response_model=AccountScoreResponse)
-def get_account_score(account_id: UUID, db: Session = Depends(get_db)):
-    score = (
-        db.query(AccountScore)
-        .filter(AccountScore.account_id == account_id)
-        .first()
+async def get_account_score(account_id: UUID, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(
+        select(AccountScore).filter(AccountScore.account_id == account_id)
     )
+    score = result.scalars().one_or_none()
 
     if not score:
         raise HTTPException(status_code=404, detail="Account score not found")
@@ -58,16 +57,15 @@ def get_account_score(account_id: UUID, db: Session = Depends(get_db)):
 
 # Update account score (system-driven)
 @router.patch("/{account_id}", response_model=AccountScoreResponse)
-def update_account_score(
+async def update_account_score(
     account_id: UUID,
     update: AccountScoreUpdate,
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
-    score = (
-        db.query(AccountScore)
-        .filter(AccountScore.account_id == account_id)
-        .first()
+    result = await db.execute(
+        select(AccountScore).filter(AccountScore.account_id == account_id)
     )
+    score = result.scalars().one_or_none()
 
     if not score:
         raise HTTPException(status_code=404, detail="Account score not found")
@@ -77,6 +75,6 @@ def update_account_score(
     score.rejected_requests = update.rejected_requests
     score.risk_level = update.risk_level
 
-    db.commit()
-    db.refresh(score)
+    await db.commit()
+    await db.refresh(score)
     return score

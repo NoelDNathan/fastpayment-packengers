@@ -1,32 +1,46 @@
 import uuid
-from sqlalchemy import Column, String, Numeric, DateTime
+from enum import Enum
+from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import String, Numeric, DateTime, text
+from sqlalchemy import Enum as SAEnum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
-from database import Base
+from app.database import Base
+
+
+class AdvanceInvoiceStatus(str, Enum):
+    REQUESTED = "requested"
+    PARTIAL_APPROVED = "partial_approved"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+
+
+AdvanceInvoiceStatusEnum = SAEnum(AdvanceInvoiceStatus, name="advance_invoice_status")
+
 
 class AdvanceRequest(Base):
-    __tablename__ = "advance_requests"
+    __tablename__ = "advance_invoices"
 
-    advance_request_id = Column(
-        UUID(as_uuid=True),
-        primary_key=True,
-        default=uuid.uuid4,
-        index=True
+    advance_request_id: Mapped[UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True
     )
 
-    invoice_id = Column(UUID(as_uuid=True), nullable=False)
+    invoice_id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
 
-    requested_amount = Column(Numeric(10, 2), nullable=False)
+    requested_amount: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
 
-    status = Column(String, nullable=False, default="pending")
-    # pending, approved, rejected, paid
+    reviewed_by: Mapped[UUID] = mapped_column(UUID(as_uuid=True), nullable=True)
 
-    reviewed_at = Column(DateTime(timezone=True), nullable=True)
+    advance_request_status: Mapped[AdvanceInvoiceStatus] = mapped_column(
+        AdvanceInvoiceStatusEnum, nullable=False, default=AdvanceInvoiceStatus.REQUESTED
+    )
 
-    review_comment = Column(String, nullable=True)
+    reviewed_at: Mapped[DateTime] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
-    created_at = Column(
-        DateTime(timezone=True),
-        server_default=func.now(),
-        nullable=False
+    review_comment: Mapped[str] = mapped_column(String, nullable=True)
+
+    created_at: Mapped[DateTime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
     )

@@ -23,6 +23,14 @@ class Settings(BaseSettings):
     # Logging
     log_level: str = "DEBUG"
 
+    # MinIO / S3-compatible object storage
+    minio_endpoint: str = "localhost:9000"
+    minio_access_key: str = "minio"
+    minio_secret_key: str = "minio123"
+    minio_secure: bool = False
+    minio_bucket_name: str = "documents"
+    minio_region: str = "us-east-1"
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
