@@ -1,6 +1,8 @@
 from sqlalchemy import Column, Integer, Numeric, String, DateTime
 from sqlalchemy.sql import func
 from database import Base
+from sqlalchemy import Enum as SAEnum
+from enum import Enum
 
 class PaymentStatus(str, Enum): 
     PENDING = "pending"

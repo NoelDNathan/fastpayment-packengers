@@ -13,6 +13,7 @@ from sqlalchemy import Enum as SAEnum
 from app.database import Base
 from app.models.types import AccountTypeEnum, PositionType
 
+
 class AccountStatus(str, Enum): 
     ACTIVE = "active"
     SUSPENDED = "suspended"

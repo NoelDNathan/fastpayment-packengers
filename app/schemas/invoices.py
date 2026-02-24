@@ -2,7 +2,7 @@ from pydantic import BaseModel, condecimal, constr
 from datetime import datetime
 from typing import Optional
 from enum import Enum
-
+from uuid import UUID
 
 # Payment status enum
 class PaymentStatus(str, Enum):
