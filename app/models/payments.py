@@ -26,10 +26,11 @@ class Payment(Base):
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True
     )
     advance_request_id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
-    payment_status: Mapped[Optional[PaymentStatus]] = mapped_column(PaymentStatusEnum, nullable=True)
+    payment_status: Mapped[PaymentStatus] = mapped_column(PaymentStatusEnum, nullable=True)
     paid_amount: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
     commission: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
     payment_method: Mapped[str] = mapped_column(String, nullable=False)
     bank_reference: Mapped[str] = mapped_column(String, nullable=False)
     payment_date: Mapped[DateTime] = mapped_column(DateTime(timezone=True), nullable=False)
+    payment_document_url: Mapped[str] = mapped_column(String, nullable=True)
     created_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
