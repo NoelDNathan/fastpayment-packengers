@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     log_level: str = "DEBUG"
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=".env.dev",
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore",
