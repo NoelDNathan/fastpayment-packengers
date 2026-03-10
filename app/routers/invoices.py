@@ -1,41 +1,23 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 from typing import List, Optional
 from uuid import UUID
 
-from models.invoices import Invoice
-from schemas.invoices import InvoiceCreate, InvoiceResponse, InvoiceStatus
-from database import get_db
+from app.models.invoices import Invoice
+from app.schemas.invoices import InvoiceDownloadResponse, InvoiceResponse
+from app.database import get_db
+from app.services.object_storage import ObjectStorageService
 
-router = APIRouter(
-    prefix="/invoices",
-    tags=["Invoices"]
-)
-
-# Create invoice
-@router.post("/", response_model=InvoiceResponse)
-def create_invoice(invoice: InvoiceCreate, db: Session = Depends(get_db)):
-    new_invoice = Invoice(
-        account_id=invoice.account_id,
-        invoice_number=invoice.invoice_number,
-        issue_date=invoice.issue_date,
-        due_date=invoice.due_date,
-        total_amount=invoice.total_amount,
-        currency=invoice.currency,
-        invoice_file_url=invoice.invoice_file_url,
-        invoice_status=invoice.invoice_status.value
-    )
-
-    db.add(new_invoice)
-    db.commit()
-    db.refresh(new_invoice)
-    return new_invoice
+router = APIRouter(prefix="/invoices", tags=["Invoices"])
+storage_service = ObjectStorageService()
 
 
 # Get invoice by ID
 @router.get("/{invoice_id}", response_model=InvoiceResponse)
-def get_invoice(invoice_id: UUID, db: Session = Depends(get_db)):
-    invoice = db.query(Invoice).filter(Invoice.invoice_id == invoice_id).first()
+async def get_invoice(invoice_id: UUID, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Invoice).filter(Invoice.invoice_id == invoice_id))
+    invoice = result.scalars().one_or_none()
     if not invoice:
         raise HTTPException(status_code=404, detail="Invoice not found")
     return invoice
@@ -43,21 +25,49 @@ def get_invoice(invoice_id: UUID, db: Session = Depends(get_db)):
 
 # Get all invoices (optional filter by account_id)
 @router.get("/", response_model=List[InvoiceResponse])
-def get_all_invoices(account_id: Optional[UUID] = None, db: Session = Depends(get_db)):
-    query = db.query(Invoice)
+async def get_all_invoices(
+    account_id: Optional[UUID] = None, db: AsyncSession = Depends(get_db)
+):
+    stmt = select(Invoice)
     if account_id:
-        query = query.filter(Invoice.account_id == account_id)
-    return query.all()
+        stmt = stmt.filter(Invoice.account_id == account_id)
+    result = await db.execute(stmt)
+    return result.scalars().all()
 
 
-# Update invoice status
-@router.patch("/{invoice_id}/status", response_model=InvoiceResponse)
-def update_invoice_status(invoice_id: UUID, status: InvoiceStatus, db: Session = Depends(get_db)):
-    invoice = db.query(Invoice).filter(Invoice.invoice_id == invoice_id).first()
+@router.get("/{invoice_id}/download-url", response_model=InvoiceDownloadResponse)
+async def get_invoice_download_url(
+    invoice_id: UUID,
+    expires_in_seconds: int = 900,
+    db: AsyncSession = Depends(get_db),
+):
+    """Return a temporary signed URL to download an uploaded invoice file."""
+    if expires_in_seconds < 60 or expires_in_seconds > 3600:
+        raise HTTPException(
+            status_code=400,
+            detail="expires_in_seconds must be between 60 and 3600.",
+        )
+
+    result = await db.execute(select(Invoice).filter(Invoice.invoice_id == invoice_id))
+    invoice = result.scalars().one_or_none()
     if not invoice:
         raise HTTPException(status_code=404, detail="Invoice not found")
 
-    invoice.invoice_status = status.value
-    db.commit()
-    db.refresh(invoice)
-    return invoice
+    try:
+        download_url = await storage_service.generate_download_url(
+            invoice.invoice_file_url,
+            expires_in_seconds=expires_in_seconds,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail="Could not generate invoice download URL.",
+        ) from exc
+
+    return InvoiceDownloadResponse(
+        invoice_id=invoice.invoice_id,
+        download_url=download_url,
+        expires_in_seconds=expires_in_seconds,
+    )

@@ -4,6 +4,7 @@ from typing import Optional
 from enum import Enum
 from uuid import UUID
 
+<<<<<<< HEAD
 # Payment status enum
 class PaymentStatus(str, Enum):
     PENDING = "pending"
@@ -11,29 +12,22 @@ class PaymentStatus(str, Enum):
     
 
 class PaymentCreate(BaseModel):
+=======
+class InvoiceResponse(BaseModel):
+    invoice_id: UUID
+>>>>>>> 39bb7dbc7f8134f1a159c88d0fe34133b1731a0d
     account_id: UUID
-    advance_request_id: Optional[UUID] = None
-    paid_amount: condecimal(max_digits=10, decimal_places=2)
-    payment_method: constr(min_length=1, max_length=50)
-    payment_date: datetime
-    bank_reference: constr(min_length=1)
-    status: Optional[PaymentStatus] = PaymentStatus.PENDING  # default
-
-class PaymentStatusUpdate(BaseModel):
-    status: PaymentStatus
-
-class PaymentResponse(BaseModel):
-    payment_id: UUID
-    account_id: UUID
-    advance_request_id: Optional[UUID]
-    paid_amount: condecimal(max_digits=10, decimal_places=2)
-    payment_method: str
-    payment_date: datetime
-    bank_reference: str
-    status: PaymentStatus
+    invoice_number: str
+    issue_date: datetime
+    due_date: datetime
+    total_amount: float
+    currency: str
+    invoice_file_url: str
     created_at: datetime
-
-    class Config:
-        orm_mode = True
+    is_verified: bool
 
 
+class InvoiceDownloadResponse(BaseModel):
+    invoice_id: UUID
+    download_url: str
+    expires_in_seconds: int
