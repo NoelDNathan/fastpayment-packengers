@@ -6,6 +6,11 @@ from sqlalchemy import Numeric, String, DateTime
 from sqlalchemy import Enum as SAEnum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
+<<<<<<< HEAD
+from database import Base
+from sqlalchemy import Enum as SAEnum
+from enum import Enum
+=======
 from app.database import Base
 
 
@@ -14,6 +19,7 @@ class PaymentStatus(str, Enum):
     RECOVERED = "recovered"
     PARTIAL_LOST = "partial_lost"
     LOST = "lost"
+>>>>>>> 39bb7dbc7f8134f1a159c88d0fe34133b1731a0d
 
 
 PaymentStatusEnum = SAEnum(PaymentStatus, name="payment_status")

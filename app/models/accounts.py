@@ -14,7 +14,11 @@ from app.database import Base
 from app.models.types import AccountTypeEnum, PositionType
 
 
+<<<<<<< HEAD
+class AccountStatus(str, Enum): 
+=======
 class AccountStatus(str, Enum):
+>>>>>>> 39bb7dbc7f8134f1a159c88d0fe34133b1731a0d
     ACTIVE = "active"
     SUSPENDED = "suspended"
 
